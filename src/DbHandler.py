@@ -1,10 +1,52 @@
 import sqlite3
 import json
 
-class SetupDBhandler(object):
+def dict_factory(cursor, row):
+    d = {}
+    for idx,col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+
+class DBhandler(object):
     def __init__(self):
         self.conn = sqlite3.connect('test.db');        
+        self.conn.row_factory = dict_factory
+       
+    
+    def setupTestData(self):
         self.setupDb()
+            
+    def get_boxes(self):
+        boxCursor = self.conn.cursor()
+        boxCursor.execute('SELECT * FROM Boxes')
+        
+        itemCursor = self.conn.cursor()
+        RowList = [];
+        for box in boxCursor:
+            BID = box["BID"]
+            itemCursor.execute("SELECT * FROM Items WHERE "+str(BID)+" = boxID")
+            itemList = []
+            for item in itemCursor:
+                itemList.append(item)
+            box["items"] = itemList
+            RowList.append(box)
+            
+        
+        return RowList
+    
+    def get_boxes_with_items(self):
+        c = self.conn.cursor()
+        c.execute('SELECT * FROM Boxes')
+        RowList = [];
+        for row in c:
+            print row["BID"]
+            
+            
+            
+            RowList.append(row)
+        return RowList
+        
             
     def setupDb(self):
         c = self.conn.cursor()
@@ -93,8 +135,11 @@ class SetupDBhandler(object):
         
         self.conn.commit()
         
+        print self.get_boxes()
+        
 if __name__ == "__main__": 
-    dbtest = SetupDBhandler()
+    dbtest = DBhandler()
+    dbtest.setupDb()
 
 
 
