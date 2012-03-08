@@ -202,9 +202,12 @@ if __name__ == "__main__":
     timeHandler = TimeStampHandler.TimeStampHandler()
     #dbtest.setupDb(timeHandler)
     #dbtest.createTestData(timeHandler)
-    #dbtest.update_Box(1, "Arne", "Mordi", 1, timeHandler)
-    #dbtest.delete_Box(4, timeHandler)
-    dbtest.create_Box("This is a new box", "This is a box", 0, timeHandler)
+    dbtest.update_Box(1, "Update funker igjen", "Konge", 99, timeHandler)
+    
+    dbtest.delete_Box(10, timeHandler)
+    dbtest.delete_Box(11, timeHandler)
+    
+    dbtest.create_Box("THis should not be her", "This is a box", 0, timeHandler)
 
 
 

@@ -9,11 +9,17 @@ import ntplib, time
 class TimeStampHandler(object):
     def __init__(self):
         
-        ntpTimeClient = ntplib.NTPClient()
-        response = ntpTimeClient.request('europe.pool.ntp.org', version=3)
-        
-        self.timeOffset = response.tx_timestamp - time.time()
-        
+        try:
+            ntpTimeClient = ntplib.NTPClient()
+            response = ntpTimeClient.request('europe.pool.ntp.org', version=3)
+            
+            self.timeOffset = response.tx_timestamp - time.time()
+            
+            print "OK - time synchronized with time server: europe.pool.ntp.org"
+            print "Registered offset: ", self.timeOffset
+        except:
+            print "Error connecting to time server: europe.pool.ntp.org"
+                                       
     def getTimeStamp(self):
         timeStamp = time.time() + self.timeOffset
         print "TimeStamp:", timeStamp

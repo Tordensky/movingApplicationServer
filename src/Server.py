@@ -44,8 +44,14 @@ class Updates:
     
         return json.dumps(message)
     
-    def POST(self):
-        pass
+    def POST(self, method_id):
+                
+        body = web.data()
+        
+        print "incoming post", body
+        
+        print "POST REQUEST"
+        return MessageHandler().updateFromPost(body)
     
 class Boxes:
     def GET(self, method_id):
@@ -64,4 +70,21 @@ class Boxes:
         web.data();
         pass
     
-if __name__ == "__main__": app.run()
+class MessageHandler(object):
+    def updateFromPost(self, data):
+        try:
+            updateDict = json.loads(data)
+            
+            print "New Boxes: ", updateDict["NewBoxes"]
+            print "Updated Boxes: ", updateDict["UpdatedBoxes"]
+            print "DeletedBoxes: ", updateDict["DeletedBoxes"] 
+        
+            return "OK"
+        except:
+            return "ERROR"
+        # TODO return new BIDS
+        
+    
+if __name__ == "__main__": 
+        print "Starting Moving Server @: "
+        app.run()

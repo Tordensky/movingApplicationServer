@@ -8,12 +8,9 @@ import httplib
 import PhoneDBHandler
 import json
 import time
-from DbHandler import DBhandler
+from sharedVars import sharedTimeStampVars
 
-
-
-timeStamp = 0
-
+shared = sharedTimeStampVars()
 dbHandler = PhoneDBHandler.DBHandler()
 
 class Client(object):
@@ -21,56 +18,82 @@ class Client(object):
         self.conn = httplib.HTTPConnection('129.242.112.213', 4500)
                 
     def get_updates(self):
-        print "Send time stamp, ", timeStamp
-        self.conn.request("GET", "/updates/" + str(timeStamp))
+        print "Send time stamp, ", shared.getStringTimeStamp()
+        self.conn.request("GET", "/updates/" + shared.getStringTimeStamp())
 
         response = self.conn.getresponse()
         
         body = response.read()
         
-        ResultHandler().updateFromResult(body)
+        MessageHandler().updateFromResult(body)
+        
+        self.conn.close()
+        
+    def post_changes(self):
+        self.conn.request("POST", "/updates/", MessageHandler().createUpdateMessage())
+        
+        response = self.conn.getresponse()
+        
+        body = response.read()
+        
+        print "Body: ", body
+        
+        if (body == "OK"):
+            print "TODO SHOULD CLEAN UP"
+        else:
+            print "Something wrong"
+        # TODO check result, if ok reset status in DB else re - send
         
         self.conn.close()
 
 
-class ResultHandler(object):
-    def updateBoxesFromResult(self, data):
-        print data
-        test = json.loads(data)
-        print test["timeStamp"]
-        list = test["boxes"]
-        for row in list:
-            print "Box:", row
-            items = row["items"]
-            for item in items:
-                print "    item:", item["itemName"]
-                
+class MessageHandler(object):
+    
+    ''' Update local DB from Updates from server'''            
     def updateFromResult(self, data):
         
         messageDict = json.loads(data)
-        print "New TimeStamp: \t", messageDict["TimeStamp"]
         
-        timeStamp = messageDict["TimeStamp"]
-        print timeStamp
-                
-        print "NewBoxes: \t",messageDict["NewBoxes"]
+        #print "New TimeStamp: \t", messageDict["TimeStamp"]
+        shared.setTimeStamp(messageDict["TimeStamp"])
+                        
+        #print "NewBoxes: \t",messageDict["NewBoxes"]
         dbHandler.create_Boxes_from_list(messageDict["NewBoxes"])
         
-        print "UpdtBoxes: \t",messageDict["UpdatedBoxes"]
+        #print "UpdtBoxes: \t",messageDict["UpdatedBoxes"]
         dbHandler.update_Boxes_from_list(messageDict["UpdatedBoxes"])
         
-        print "DelBoxes \t", messageDict["DeletedBoxes"]
+        #print "DelBoxes \t", messageDict["DeletedBoxes"]
         dbHandler.delete_Boxes_from_list(messageDict["DeletedBoxes"])
+        
+        # TODO 
+            # LOCATIONS AND ITEMS
+    
+    ''' Sync New Changes with Server'''        
+    def createUpdateMessage(self):
+        updates = {}
+        updates["NewBoxes"] = dbHandler.get_boxes_created_after_last_sync()
+        updates["UpdatedBoxes"] = dbHandler.get_boxes_updated_after_last_sync()
+        updates["DeletedBoxes"] = dbHandler.get_boxes_deleted_after_last_sync()
+        
+        return json.dumps(updates)
         
                 
 if __name__ == "__main__":
+    count = 1
     client = Client()
     dbHandler.setupSimPhoneDB()
     #dbHandler.createTestData()
     while (1):
-        print "\n\n------"
+        print "\n\nGET ------ REQUEST: ", count
         client.get_updates()
-        time.sleep(10)
+        time.sleep(2)
+        count += 1
+        
+        print "\nPOST ------ REQUEST: ", count
+        client.post_changes()
+        time.sleep(60)
+        count += 1
 
 
 
