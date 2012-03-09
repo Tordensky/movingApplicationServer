@@ -1,12 +1,11 @@
 import web
 import json
-import DbHandler
+import ServerDBHandler
 import TimeStampHandler
 
 
 urls = (
         '/', 'index',
-        '/login', 'login',
         '/boxes/(.*)', 'Boxes',
         '/updates/(.*)', 'Updates'
         )
@@ -21,29 +20,18 @@ timeHandler = TimeStampHandler.TimeStampHandler()
 
 class index:
     def GET(self):
-        movingDBHandler = DbHandler.DBhandler()
+
         #dbHandle = dbHandler.DBhandler()
-        return json.dumps(movingDBHandler.get_boxes())
+        return "DRIT FETT"#json.dumps(movingDBHandler.get_boxes())
     
-
-class login:
-    def GET(self):
-        return "Logged In"
-
 class Updates:
     def GET(self, method_id):
         timeStamp = format(method_id)
         timeStamp = timeStamp.split('/')[0]
-        movingDBHandler = DbHandler.DBhandler()
+    
+        #return json.dumps(message)
+        return MessageHandler().createUpdateMessage(int(timeStamp))
         
-        message = {}
-        message["TimeStamp"] = int(timeHandler.getTimeStamp())
-        message["NewBoxes"] = movingDBHandler.get_boxes_created_after(int(timeStamp))
-        message["UpdatedBoxes"] = movingDBHandler.get_boxes_updated_after(int(timeStamp))
-        message["DeletedBoxes"] = movingDBHandler.get_boxes_deleted_after(int(timeStamp))
-    
-        return json.dumps(message)
-    
     def POST(self, method_id):
                 
         body = web.data()
@@ -58,7 +46,7 @@ class Boxes:
         timeStamp = format(method_id)
         
         timeStamp = timeStamp.split('/')[0]
-        movingDBHandler = DbHandler.DBhandler()
+        movingDBHandler = ServerDBHandler.DBhandler()
         
         message = {}
         message["timeStamp"] = int(timeHandler.getTimeStamp())
@@ -71,20 +59,62 @@ class Boxes:
         pass
     
 class MessageHandler(object):
-    def updateFromPost(self, data):
+    def createUpdateMessage(self, timeStamp):
         try:
-            updateDict = json.loads(data)
+            movingDBHandler = ServerDBHandler.DBhandler()
             
-            print "New Boxes: ", updateDict["NewBoxes"]
-            print "Updated Boxes: ", updateDict["UpdatedBoxes"]
-            print "DeletedBoxes: ", updateDict["DeletedBoxes"] 
+            message = {}
+            
+            message["NewLocations"] =       movingDBHandler.get_locations_created_after(timeStamp) 
+            message["NewBoxes"] =           movingDBHandler.get_boxes_created_after(timeStamp)
+            message["NewItems"] =           movingDBHandler.get_items_created_after(timeStamp)
+            message["UpdatedLocations"] =   movingDBHandler.get_locations_updated_after(timeStamp)
+            message["UpdatedBoxes"] =       movingDBHandler.get_boxes_updated_after(timeStamp)
+            message["UpdatedItems"] =       movingDBHandler.get_items_updated_after(timeStamp)
+            message["DeletedLocations"] =   movingDBHandler.get_locations_deleted_after(timeStamp)
+            message["DeletedBoxes"] =       movingDBHandler.get_boxes_deleted_after(timeStamp)
+            message["DeletedItems"] =       movingDBHandler.get_items_deleted_after(timeStamp)
+            message["TimeStamp"] =          int(timeHandler.getTimeStamp())
+            
+            return json.dumps(message)
+        
+        except:
+            return "SERVER ERROR"
+    
+    def updateFromPost(self, data):
+        #try:
+            movingDBHandler = ServerDBHandler.DBhandler()
+            updates = json.loads(data)
+            
+            print "NL ", len(updates["NewLocations"])
+            locationIDmap = movingDBHandler.create_locations_from_client(updates["NewLocations"], timeHandler)
+            print locationIDmap
+            print "UL ", len(updates["UpdatedLocations"])
+            print "DL ", len(updates["DeletedLocations"])
+            
+            
+            print "NB ", len(updates["NewBoxes"])
+            boxIdMap = movingDBHandler.create_boxes_from_client(updates["NewBoxes"], locationIDmap, timeHandler)
+            print boxIdMap
+            print "UB ", len(updates["UpdatedBoxes"])
+            print "DB ", len(updates["DeletedBoxes"])
+            
+            print "NI ", len(updates["NewItems"])
+            itemIdMap  = movingDBHandler.create_items_from_client(updates["NewItems"], boxIdMap, timeHandler)
+            print itemIdMap
+            print "UB ", len(updates["UpdatedItems"])
+            print "DB ", len(updates["DeletedItems"])
+            
+
         
             return "OK"
-        except:
-            return "ERROR"
+        #except:
+        #    return "ERROR"
         # TODO return new BIDS
         
     
 if __name__ == "__main__": 
         print "Starting Moving Server @: "
+        ServerDBHandler.DBhandler().setupDb(timeHandler)
+        #DbHandler.DBhandler().createTestData(timeHandler)
         app.run()

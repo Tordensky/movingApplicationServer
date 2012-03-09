@@ -22,5 +22,5 @@ class TimeStampHandler(object):
                                        
     def getTimeStamp(self):
         timeStamp = time.time() + self.timeOffset
-        print "TimeStamp:", timeStamp
+        #print "TimeStamp:", timeStamp
         return timeStamp

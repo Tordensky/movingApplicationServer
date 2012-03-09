@@ -16,15 +16,15 @@ class DBHandler(object):
         self.conn = sqlite3.connect('simPhoneDB.db')
         self.conn.row_factory = dict_factory
         
-    # BOXES HANDLER
+# BOXES HANDLER
     
     ''' Create a box. sets updated to true so this box is synced to server'''
-    def create_Box(self, BID, boxName, boxDescription, boxLocation, boxCreated = 1):
+    def create_Box(self, boxName, boxDescription, localLID = 0, LID = 0, boxCreated = 1, BID = 0):
         c = self.conn.cursor()
         c.execute("""   INSERT INTO Boxes 
-                        (BID, boxName, boxDescription, boxLocation, boxCreated, boxDeleted) 
+                        (BID, boxName, boxDescription, localLID, LID, Created) 
                         VALUES ("%d", "%s", "%s", %d, %d, %d)
-                        """ % (BID, boxName, boxDescription, boxLocation, boxCreated, 0))
+                        """ % (BID, boxName, boxDescription, localLID, LID, boxCreated))
         c.close()
         self.conn.commit()
     
@@ -33,17 +33,17 @@ class DBHandler(object):
         count = 0
         for box in boxList:
             count += 1
-            self.create_Box(int(box["BID"]), box["boxName"], box["boxDescription"], int(box["boxLocation"]), 0)  
+            self.create_Box(box["boxName"], box["boxDescription"], int(box["boxLocation"]), 0, BID = int(box["BID"]), boxCreated = 0)  
     
         print "Created boxes: ", count 
         
     ''' Update box data, box identified by either BID(Remote ID on server OR rowID (local id))'''
-    def update_Box(self, rowID, BID, boxName, boxDescription, boxLocation, boxUpdated = 1):
+    def update_Box(self, rowID,  boxName, boxDescription, BID = 0, boxLocation = 0, boxUpdated = 1):
         c = self.conn.cursor()
         c.execute("""   UPDATE Boxes
-                        SET boxName = "%s", boxDescription = "%s", boxLocation = "%s", BID = %d, boxUpdated = %d
+                        SET boxName = "%s", boxDescription = "%s", localLID = "%s", BID = %d, Updated = %d
                         WHERE BID = %d OR id = %d
-                        """ % (boxName, boxDescription, boxLocation, BID, BID, rowID, boxUpdated))        
+                        """ % (boxName, boxDescription, boxLocation, BID, boxUpdated, BID, rowID))        
         c.close()
         self.conn.commit()
         
@@ -61,7 +61,8 @@ class DBHandler(object):
         c = self.conn.cursor()
         c.execute("""   UPDATE Boxes
                         SET BID = %d
-                        """ % (BID))
+                        WHERE id = %d
+                        """ % (BID, rowID))
         
     ''' Delete box from table'''    
     def delete_Box_Hard(self, rowID, BID):
@@ -78,7 +79,7 @@ class DBHandler(object):
         # TODO should delete items in this box soft
         c = self.conn.cursor()
         c.execute("""   UPDATE Boxes
-                        SET boxDeleted = 1
+                        SET Deleted = 1
                         WHERE id = %d
                         """ % (box_id))
         c.close()
@@ -91,88 +92,185 @@ class DBHandler(object):
             count += 1
             self.delete_Box_Hard(0, int(box["BID"]))
         print "Deleted boxes: ", count
-    
+
+# Boxes    
     ''' Get boxes created after last sync with server'''
     def get_boxes_created_after_last_sync(self):
-        c = self.conn.cursor() 
-        c.execute("""   SELECT * 
-                        FROM Boxes
-                        WHERE boxCreated == 1 OR
-                              boxUpdated == 1 AND
-                              boxDeleted == 0  
-                        """)
-        boxList = []
-        for box in c:
-            boxList.append(box) 
-        c.close()
-        return boxList
+        return self._get_created_after_last_sync("Boxes")
     
     ''' Get boxes updated after last sync with server'''
     def get_boxes_updated_after_last_sync(self):
-        c = self.conn.cursor() 
-        c.execute("""   SELECT * 
-                        FROM Boxes
-                        WHERE boxCreated == 0 AND
-                              boxUpdated == 1 AND
-                              boxDeleted == 0  
-                        """)
-        boxList = []
-        for box in c:
-            boxList.append(box) 
-        c.close()
-        return boxList
+        return self._get_updated_after_last_sync("Boxes")
     
     ''' Get boxes deleted after last sync with server'''
     def get_boxes_deleted_after_last_sync(self):
+        return self._get_deleted_after_last_sync("Boxes")
+
+# Items      
+    ''' Get items created after last sync with server'''
+    def get_items_created_after_last_sync(self):
+        return self._get_created_after_last_sync("Items")
+    
+    ''' Get items updated after last sync with server'''
+    def get_items_updated_after_last_sync(self):
+        return self._get_updated_after_last_sync("Items")
+    
+    ''' Get items deleted after last sync with server'''
+    def get_items_deleted_after_last_sync(self):
+        return self._get_deleted_after_last_sync("Items")
+
+# Locations    
+    ''' Get items created after last sync with server'''
+    def get_locations_created_after_last_sync(self):
+        return self._get_created_after_last_sync("locations")
+    
+    ''' Get items updated after last sync with server'''
+    def get_locations_updated_after_last_sync(self):
+        return self._get_updated_after_last_sync("locations")
+    
+    ''' Get items deleted after last sync with server'''
+    def get_locations_deleted_after_last_sync(self):
+        return self._get_deleted_after_last_sync("locations")
+    
+    
+    def _get_created_after_last_sync(self, table):
+        c = self.conn.cursor() 
+        c.execute('''   SELECT * 
+                        FROM %s
+                        Where (Created == 1 OR
+                              (Created == 1 AND
+                              Updated == 1)) AND
+                              Deleted == 0  
+                        ''' % (table))
+        return self.result_to_list(c)
+        
+    
+    def _get_updated_after_last_sync(self, table):
         c = self.conn.cursor() 
         c.execute("""   SELECT * 
-                        FROM Boxes
-                        WHERE boxCreated == 0 AND
-                              boxDeleted == 1  
-                        """)
-        boxList = []
-        for box in c:
-            boxList.append(box) 
+                        FROM %s
+                        WHERE Created = 0 AND
+                              Updated = 1 AND
+                              Deleted = 0  
+                        """ % table)
+        return self.result_to_list(c)
+    
+    def _get_deleted_after_last_sync(self, table):
+        c = self.conn.cursor()
+        c.execute("""   SELECT *
+                        FROM %s
+                        WHERE Created = 0 AND
+                              Deleted = 1 
+                        """ % table)
+        return self.result_to_list(c)
+    
+    
+    # TODO set BID, LID AND IID from result
+    ''' Update data after sync '''
+    def update_after_sync(self):
+        self._reset_update_create_flags("Locations")
+        self._reset_update_create_flags("Boxes")
+        self._reset_update_create_flags("Items")
+        
+        self._delete_synced_records("Locations")
+        self._delete_synced_records("Boxes")
+        self._delete_synced_records("Items")
+    
+    ''' Set create and update flags to 0'''    
+    def _reset_update_create_flags(self, table):
+        c = self.conn.cursor()
+        c.execute("""   UPDATE %s
+                        SET Created = 0, Updated = 0
+                        """ % (table))
+        
+    ''' Delete records from table where deleted = 1'''
+    def _delete_synced_records(self, table):
+        c = self.conn.cursor()
+        c.execute("""   DELETE FROM %s
+                        WHERE Deleted = 1
+                        """ % (table))
         c.close()
-        return boxList
+        self.conn.commit()          
+    
+    ''' Takes DB cursor and returns list of rows'''
+    def result_to_list(self, result):
+        rowList = []
+        for row in result:
+            rowList.append(row)
+        result.close()
+        return rowList
+    
     
     ''' Create Tables in DB'''
     def setupSimPhoneDB(self):
         c = self.conn.cursor()
         
+        c.execute('DROP TABLE IF exists Locations')
         c.execute('DROP TABLE IF exists Boxes')
+        c.execute('DROP TABLE IF exists Items')
         
-                # Create Boxes Table
+        
+        locationString = """
+                        CREATE TABLE Locations (
+                        id INTEGER,
+                        LID INTEGER,
+                        locationName TEXT,
+                        locationDescription TEXT,
+                        Created INTEGER NOT NULL DEFAULT 0,
+                        Updated INTEGER NOT NULL DEFAULT 0,
+                        Deleted INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(id ASC)
+                        )"""
+        
         boxString = """ CREATE TABLE Boxes(
                         id INTEGER,
                         BID INTEGER, 
                         boxName TEXT, 
                         boxDescription TEXT, 
-                        boxLocation INTEGER,
-                        boxCreated INTEGER NOT NULL DEFAULT 0,
-                        boxUpdated INTEGER NOT NULL DEFAULT 0,
-                        boxDeleted INTEGER NOT NULL DEFAULT 0,
+                        localLID INTEGER,
+                        LID INTEGER,
+                        Created INTEGER NOT NULL DEFAULT 0,
+                        Updated INTEGER NOT NULL DEFAULT 0,
+                        Deleted INTEGER NOT NULL DEFAULT 0,
                         PRIMARY KEY(id ASC)
                         )"""
-                            
+                        
+        itemString = """CREATE TABLE Items(
+                        id INTEGER,
+                        IID INTEGER
+                        itemName TEXT,
+                        itemDescription TEXT,
+                        BID INTEGER,
+                        localBID INTEGER,
+                        Created INTEGER NOT NULL DEFAULT 0,
+                        Updated INTEGER NOT NULL DEFAULT 0,
+                        Deleted INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(id ASC)
+                        )"""
+        
+        c.execute(locationString)
+        c.execute(itemString)                    
         c.execute(boxString)
         c.close()
         self.conn.commit()
         
     def createTestData(self):
         
-        self.create_Box(0, "TestBox", "TestBoxDescription", 0)
-        self.create_Box(0, "TestBox1", "TestBoxDescription1", 0)
-        self.create_Box(0, "TestBox2", "TestBoxDescription2", 0)
-        self.create_Box(0, "TestBox3", "TestBoxDescription3", 0)
-        self.delete_Box_Soft(1)
-        self.delete_Box_Soft(2)
+        self.create_Box("TestBox", "TestBoxDescription")
+        self.create_Box("TestBox1", "TestBoxDescription1")
+        self.create_Box("TestBox2", "TestBoxDescription2")
+        self.create_Box("TestBox3", "TestBoxDescription3")
+        
+
 
                 
 if __name__ == "__main__":
     self = DBHandler()
-    #self.setupSimPhoneDB()
+    self.setupSimPhoneDB()
     self.createTestData()
+    print self._get_created_after_last_sync("Boxes")
+    print self._get_updated_after_last_sync("Boxes")
+    print self._get_deleted_after_last_sync("Boxes")
 
     
     

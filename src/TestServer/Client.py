@@ -15,12 +15,12 @@ dbHandler = PhoneDBHandler.DBHandler()
 
 class Client(object):
     def __init__(self):
-        self.conn = httplib.HTTPConnection('129.242.112.213', 4500)
+        self.conn = httplib.HTTPConnection('192.168.0.198', 47301)
                 
     def get_updates(self):
         print "Send time stamp, ", shared.getStringTimeStamp()
         self.conn.request("GET", "/updates/" + shared.getStringTimeStamp())
-
+        
         response = self.conn.getresponse()
         
         body = response.read()
@@ -39,7 +39,8 @@ class Client(object):
         print "Body: ", body
         
         if (body == "OK"):
-            print "TODO SHOULD CLEAN UP"
+            dbHandler.update_after_sync()
+            print "Clean UP"
         else:
             print "Something wrong"
         # TODO check result, if ok reset status in DB else re - send
@@ -56,7 +57,9 @@ class MessageHandler(object):
         
         #print "New TimeStamp: \t", messageDict["TimeStamp"]
         shared.setTimeStamp(messageDict["TimeStamp"])
-                        
+        
+        # TODO FIX INCOMMING MESSAGE
+        print "Message", messageDict["TimeStamp"]                
         #print "NewBoxes: \t",messageDict["NewBoxes"]
         dbHandler.create_Boxes_from_list(messageDict["NewBoxes"])
         
@@ -72,9 +75,17 @@ class MessageHandler(object):
     ''' Sync New Changes with Server'''        
     def createUpdateMessage(self):
         updates = {}
-        updates["NewBoxes"] = dbHandler.get_boxes_created_after_last_sync()
+        updates["NewBoxes"]     = dbHandler.get_boxes_created_after_last_sync()
         updates["UpdatedBoxes"] = dbHandler.get_boxes_updated_after_last_sync()
         updates["DeletedBoxes"] = dbHandler.get_boxes_deleted_after_last_sync()
+        
+        updates["NewItems"]     = dbHandler.get_items_created_after_last_sync()
+        updates["UpdatedItems"] = dbHandler.get_items_updated_after_last_sync()
+        updates["DeletedItems"] = dbHandler.get_items_deleted_after_last_sync()
+        
+        updates["NewLocations"] = dbHandler.get_locations_created_after_last_sync()
+        updates["UpdatedLocations"] = dbHandler.get_locations_updated_after_last_sync()
+        updates["DeletedLocations"] = dbHandler.get_locations_deleted_after_last_sync()
         
         return json.dumps(updates)
         
@@ -83,7 +94,7 @@ if __name__ == "__main__":
     count = 1
     client = Client()
     dbHandler.setupSimPhoneDB()
-    #dbHandler.createTestData()
+    dbHandler.createTestData()
     while (1):
         print "\n\nGET ------ REQUEST: ", count
         client.get_updates()
@@ -92,7 +103,7 @@ if __name__ == "__main__":
         
         print "\nPOST ------ REQUEST: ", count
         client.post_changes()
-        time.sleep(60)
+        time.sleep(2)
         count += 1
 
 
