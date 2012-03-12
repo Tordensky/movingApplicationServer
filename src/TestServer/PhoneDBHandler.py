@@ -21,12 +21,31 @@ class DBHandler(object):
     ''' Create a box. sets updated to true so this box is synced to server'''
     def create_Box(self, boxName, boxDescription, localLID = 0, LID = 0, boxCreated = 1, BID = 0):
         c = self.conn.cursor()
-        c.execute("""   INSERT INTO Boxes 
-                        (BID, boxName, boxDescription, localLID, LID, Created) 
-                        VALUES ("%d", "%s", "%s", %d, %d, %d)
-                        """ % (BID, boxName, boxDescription, localLID, LID, boxCreated))
-        c.close()
-        self.conn.commit()
+#    IF EXISTS (SELECT * FROM Table1 WHERE Column1='SomeValue')
+#    UPDATE Table1 SET (...) WHERE Column1='SomeValue'
+#    ELSE
+#    INSERT INTO Table1 VALUES (...)
+        c.execute("""SELECT * FROM Boxes Where BID = %d AND BID != 0""" % BID)
+        data = c.fetchone()
+        if data is None:
+
+
+        
+        
+        
+            c.execute("""   
+                            INSERT INTO Boxes 
+                            (BID, boxName, boxDescription, localLID, LID, Created) 
+                            VALUES (%d, "%s", "%s", %d, %d, %d)
+                            """ % (BID, boxName, boxDescription, localLID, LID, boxCreated))
+            
+            
+    #        c.execute("""   INSERT INTO Boxes 
+    #                        (BID, boxName, boxDescription, localLID, LID, Created) 
+    #                        VALUES ("%d", "%s", "%s", %d, %d, %d)
+    #                        """ % (BID, boxName, boxDescription, localLID, LID, boxCreated))
+            c.close()
+            self.conn.commit()
     
     ''' Creates boxes from list of box dicts '''
     def create_Boxes_from_list(self, boxList):
@@ -41,9 +60,9 @@ class DBHandler(object):
     def update_Box(self, rowID,  boxName, boxDescription, BID = 0, boxLocation = 0, boxUpdated = 1):
         c = self.conn.cursor()
         c.execute("""   UPDATE Boxes
-                        SET boxName = "%s", boxDescription = "%s", localLID = "%s", BID = %d, Updated = %d
+                        SET boxName = "%s", boxDescription = "%s", localLID = "%s", Updated = %d
                         WHERE BID = %d OR id = %d
-                        """ % (boxName, boxDescription, boxLocation, BID, boxUpdated, BID, rowID))        
+                        """ % (boxName, boxDescription, boxLocation, boxUpdated, BID, rowID))        
         c.close()
         self.conn.commit()
         
@@ -63,6 +82,11 @@ class DBHandler(object):
                         SET BID = %d
                         WHERE id = %d
                         """ % (BID, rowID))
+    
+    ''' Set box BID's from dict'''
+    def set_box_bids_from_dict(self, BidMap):
+        for rowID in BidMap:
+            self.set_box_bid(int(rowID), int(BidMap[rowID]))
         
     ''' Delete box from table'''    
     def delete_Box_Hard(self, rowID, BID):
@@ -256,17 +280,18 @@ class DBHandler(object):
         
     def createTestData(self):
         
-        self.create_Box("TestBox", "TestBoxDescription")
-        self.create_Box("TestBox1", "TestBoxDescription1")
-        self.create_Box("TestBox2", "TestBoxDescription2")
-        self.create_Box("TestBox3", "TestBoxDescription3")
-        
+#        self.create_Box("TestBox", "TestBoxDescription")
+#        self.create_Box("TestBox1", "TestBoxDescription1")
+#        self.create_Box("TestBox2", "TestBoxDescription2")
+#        self.create_Box("TestBox3", "TestBoxDescription3")
+        self.update_Box(3, "Should be updated", "UPDATED DESCRIPTION")
+        #self.delete_Box_Soft(3)
 
 
                 
 if __name__ == "__main__":
     self = DBHandler()
-    self.setupSimPhoneDB()
+    #self.setupSimPhoneDB()
     self.createTestData()
     print self._get_created_after_last_sync("Boxes")
     print self._get_updated_after_last_sync("Boxes")

@@ -49,9 +49,9 @@ class Boxes:
         movingDBHandler = ServerDBHandler.DBhandler()
         
         message = {}
-        message["timeStamp"] = int(timeHandler.getTimeStamp())
-        message["boxes"] = movingDBHandler.get_boxes_after_time(int(timeStamp))
         
+        message["boxes"] = movingDBHandler.get_boxes_after_time(int(timeStamp))
+        message["timeStamp"] = int(timeHandler.getTimeStamp())
         return json.dumps(message);
     
     def POST(self):
@@ -96,8 +96,12 @@ class MessageHandler(object):
             print "NB ", len(updates["NewBoxes"])
             boxIdMap = movingDBHandler.create_boxes_from_client(updates["NewBoxes"], locationIDmap, timeHandler)
             print boxIdMap
+            
             print "UB ", len(updates["UpdatedBoxes"])
+            movingDBHandler.update_boxes_from_client(updates["UpdatedBoxes"], locationIDmap, timeHandler)
+            
             print "DB ", len(updates["DeletedBoxes"])
+            movingDBHandler.delete_boxes_from_client(updates["DeletedBoxes"], timeHandler)
             
             print "NI ", len(updates["NewItems"])
             itemIdMap  = movingDBHandler.create_items_from_client(updates["NewItems"], boxIdMap, timeHandler)
@@ -105,9 +109,13 @@ class MessageHandler(object):
             print "UB ", len(updates["UpdatedItems"])
             print "DB ", len(updates["DeletedItems"])
             
-
+            response = {}
+            response["Status"] = "OK"
+            response["LocationIdMap"] = boxIdMap
+            response["BoxIdMap"] = boxIdMap
+            response["ItemIdMap"] = boxIdMap
         
-            return "OK"
+            return json.dumps(response)
         #except:
         #    return "ERROR"
         # TODO return new BIDS
@@ -116,5 +124,5 @@ class MessageHandler(object):
 if __name__ == "__main__": 
         print "Starting Moving Server @: "
         ServerDBHandler.DBhandler().setupDb(timeHandler)
-        #DbHandler.DBhandler().createTestData(timeHandler)
+        ServerDBHandler.DBhandler().createTestData(timeHandler)
         app.run()

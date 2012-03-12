@@ -102,6 +102,22 @@ class DBhandler(object):
         c.close()
         self.conn.commit()
     
+    ''' Update boxes from Client '''
+    def update_boxes_from_client(self, boxes, locationIdMap, timeHandler):
+        LID = 0;
+        for box in boxes:
+            LID = self.remote_Id_to_local(box, "localLID", "LID", locationIdMap)
+#            int(box["LID"])
+#            if (LID > 0):
+#                pass
+#            elif (box["localLID"] > 0):
+#                LID = locationIdMap[box["localLID"]]
+#            else:
+#                LID = 0
+                               
+            self.update_Box(box["BID"], box["boxName"], box["boxDescription"], LID, timeHandler)
+    
+            
     ''' Deletes box from BID'''        
     def delete_Box(self, BID, timeHandler):
         c = self.conn.cursor()
@@ -111,8 +127,22 @@ class DBhandler(object):
                         """ % (int(timeHandler.getTimeStamp()), BID))
         c.close()
         self.conn.commit()
+    
+    ''' Deletes boxes from Client '''    
+    def delete_boxes_from_client(self, boxes, timeHandler):
+        for box in boxes:
+            self.delete_Box(box["BID"], timeHandler)
 
 ## BOX END   
+    def remote_Id_to_local(self, row, localIdName, IdName, idMap):
+        LOCAL_ID = int(row[IdName])
+        if (LOCAL_ID > 0):
+            pass
+        elif (row[localIdName] > 0):
+            LOCAL_ID = idMap[int(row[localIdName])]
+        else:    
+            LOCAL_ID = 0
+        return LOCAL_ID
     
     def create_locations_from_client(self, new_locations, timeHandler):
         idMap = {}
@@ -125,7 +155,7 @@ class DBhandler(object):
         print "Location id map", idMap
         return idMap
         
-    ''' Update Boxes from Client'''
+    ''' Create new Boxes from Client'''
     def create_boxes_from_client(self, new_boxes, locationIdMap, timeHandler):
         idMap = {}
         count = 0
@@ -133,20 +163,21 @@ class DBhandler(object):
         LID = 0
         for box in new_boxes:
             count += 1
-            LID = int(box["LID"])
-            
-            if (box["localLID"] == 0):
-                LID = 0
-            else:    
-                LID = locationIdMap[int(box["localLID"])]
-
+            LID = self.remote_Id_to_local(box, "localLID", "LID", locationIdMap)
+#            LID = int(box["LID"])
+#            
+#            if (LID > 0):
+#                pass
+#            elif (box["localLID"] > 0):
+#                LID = locationIdMap[int(box["localLID"])]
+#            else:    
+#                LID = 0
 
             BID = self.create_Box(box["boxName"], box["boxDescription"], LID, timeHandler)
             idMap[box["id"]] = BID
         print "idMap", idMap
         return idMap
     
-    # TODO WRONG WRONG WRONG
     def create_items_from_client(self, new_items, boxIdMap, timeHandler):
         idMap = {}
         count = 0
@@ -154,12 +185,15 @@ class DBhandler(object):
         IID = 0
         for item in new_items:
             count += 1
-            BID = int(item["BID"])
-            
-            if (item["localBID"] == 0):
-                BID = 0
-            else:
-                BID = boxIdMap[item["localBID"]]
+            BID = self.remote_Id_to_local(item, "localBID", "BID", boxIdMap)
+#            BID = int(item["BID"])
+#            
+#            if (BID > 0):
+#                pass
+#            elif (item["localBID"] > 0):
+#                BID = boxIdMap[item["localBID"]]
+#            else:
+#                BID = 0
                 
             IID = self.create_item(item["itemName"],item["itemDescription"], BID, timeHandler)
             idMap[item["id"]] = IID
@@ -337,7 +371,8 @@ class DBhandler(object):
     # TODO OLD METHOD REMOVE
     def get_boxes_after_time(self, time):
         boxCursor = self.conn.cursor()
-        boxCursor.execute('SELECT * FROM Boxes Where boxUpdated >= %d' % time);
+        print time
+        boxCursor.execute('SELECT * FROM Boxes Where boxCreated >= %d' % time);
         itemCursor = self.conn.cursor()
         
         RowList = []
@@ -418,6 +453,11 @@ class DBhandler(object):
     def createTestData(self, timeHandler):
         
         # TODO create test locations, test updates and deletes
+        locations = ["Home", "Storage", "Garage",]
+        Boxes = ["Kitchen stuff", "Tools", "Bedroom", "Toys", "Winter clothes"]
+        Items = ["Untitled Item"]
+        
+        
         
         for locNum in range (3):
             locationName = "Location: " + str(locNum)
@@ -447,7 +487,8 @@ if __name__ == "__main__":
     dbtest = DBhandler()
     timeHandler = TimeStampHandler.TimeStampHandler()
     #dbtest.setupDb(timeHandler)
-    dbtest.createTestData(timeHandler)
+    #dbtest.createTestData(timeHandler)
+    dbtest.get_boxes_after_time(TimeStampHandler.TimeStampHandler().getTimeStamp())
 
 
 

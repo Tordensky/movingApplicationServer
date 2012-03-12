@@ -15,7 +15,7 @@ dbHandler = PhoneDBHandler.DBHandler()
 
 class Client(object):
     def __init__(self):
-        self.conn = httplib.HTTPConnection('192.168.0.198', 47301)
+        self.conn = httplib.HTTPConnection('movingapp.no-ip.org', 47301)
                 
     def get_updates(self):
         print "Send time stamp, ", shared.getStringTimeStamp()
@@ -38,8 +38,11 @@ class Client(object):
         
         print "Body: ", body
         
-        if (body == "OK"):
-            dbHandler.update_after_sync()
+        result = json.loads(body)
+        
+        if (result["Status"] == "OK"):
+            
+            MessageHandler().update_from_post_update(result)
             print "Clean UP"
         else:
             print "Something wrong"
@@ -72,6 +75,11 @@ class MessageHandler(object):
         # TODO 
             # LOCATIONS AND ITEMS
     
+    
+    def update_from_post_update(self, result):
+        dbHandler.update_after_sync()
+        dbHandler.set_box_bids_from_dict(result["BoxIdMap"]);
+    
     ''' Sync New Changes with Server'''        
     def createUpdateMessage(self):
         updates = {}
@@ -93,8 +101,8 @@ class MessageHandler(object):
 if __name__ == "__main__":
     count = 1
     client = Client()
-    dbHandler.setupSimPhoneDB()
-    dbHandler.createTestData()
+    #dbHandler.setupSimPhoneDB()
+    #dbHandler.createTestData()
     while (1):
         print "\n\nGET ------ REQUEST: ", count
         client.get_updates()
@@ -105,6 +113,9 @@ if __name__ == "__main__":
         client.post_changes()
         time.sleep(2)
         count += 1
+        
+        if (count == 10):
+            break
 
 
 
