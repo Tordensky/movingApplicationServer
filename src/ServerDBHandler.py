@@ -38,6 +38,7 @@ class DBhandler(object):
             
         return RowList
 
+    
 ## BOX START
     
     ''' Gets all boxes created after time stamp and the items in this box'''
@@ -49,7 +50,7 @@ class DBhandler(object):
                                     """ % timeStamp);
         RowList = []
         for box in boxCursor:
-            box["NewItems"] = self.get_items_created_after(timeStamp)
+            #box["NewItems"] = self.get_items_created_after(timeStamp)
             RowList.append(box)
         return RowList
     
@@ -258,7 +259,7 @@ class DBhandler(object):
     def update_item(self, IID, newItemName, newItemDescription, timeHandler):
         c = self.conn.cursor()
         c.execute("""   UPDATE Items
-                        SET itemName = "%s", itemDescription = "%s", boxUpdated = %d
+                        SET itemName = "%s", itemDescription = "%s", itemUpdated = %d
                         WHERE IID = %d 
                         """ % (newItemName, newItemDescription, int(timeHandler.getTimeStamp()), IID))
         c.close()
@@ -267,7 +268,7 @@ class DBhandler(object):
     ''' Deletes item from IID'''        
     def delete_item(self, IID, timeHandler):
         c = self.conn.cursor()
-        c.execute("""   UPDATE Item
+        c.execute("""   UPDATE Items
                         Set itemDeleted = %d
                         WHERE IID = %d
                         """ % (int(timeHandler.getTimeStamp()), IID))
@@ -457,29 +458,51 @@ class DBhandler(object):
         Boxes = ["Kitchen stuff", "Tools", "Bedroom", "Toys", "Winter clothes"]
         Items = ["Untitled Item"]
         
+        locationNameNum = 0
+        boxNameNum = 0
+        itemNameNum = 0
         
-        
-        for locNum in range (3):
+        for locNum in range (2):
             locationName = "Location: " + str(locNum)
             locationDescription = "location " + str(locNum) + " description"            
             LID = self.create_location(locationName, locationDescription, timeHandler)
             
-            for boxNum in range (5):
-                boxName = "Box: " + str(boxNum)
-                boxDescription = "box " + str(boxNum) + " description"
+            for boxNum in range (2):
+                boxName = "Box: " + str(boxNameNum)
+                boxDescription = "box " + str(boxNameNum) + " description"
                 BID = self.create_Box(boxName, boxDescription, LID, timeHandler)
+                boxNameNum += 1
                 
-                for itemNum in range (10):
-                    itemName = "Item " +  str(itemNum)
-                    itemDescription = "item from box: "+  str(boxNum)
+                for itemNum in range (2):
+                    itemName = "Item " +  str(itemNameNum)
+                    itemDescription = "item from box: "+  str(itemNameNum)
                     self.create_item(itemName, itemDescription, BID, timeHandler)
+                    itemNameNum += 1
         
         
+    def createUpdates(self, timeHandler):
+        for x in range(10):
+            self.update_location(x, "UPDATED LOCATION", "UPDT LOC", timeHandler)
         
+        for x in range (10):
+            self.update_Box(x, "UPDATED2", "UPDATED2", 2, timeHandler);
+            
+        for x in range (10):
+            self.update_item(x, "Updated item", "Updated Item", timeHandler)    
         #self.update_Box(1, "Box updated" , "Endra", 1, timeHandler)
         
         #self.delete_Box(3, timeHandler)
         #self.delete_Box(2, timeHandler)
+        
+    def deleteShit(self, timeHandler):
+        #for x in range(10):
+        #    self.delete_location(x, timeHandler)
+            
+        for x in range(20):
+            self.delete_item(x, timeHandler)
+            
+        #for x in range(2):
+        #    self.delete_Box(x, timeHandler)
         
         
         
@@ -488,8 +511,11 @@ if __name__ == "__main__":
     timeHandler = TimeStampHandler.TimeStampHandler()
     #dbtest.setupDb(timeHandler)
     #dbtest.createTestData(timeHandler)
+    #dbtest.createUpdates(timeHandler)
+    dbtest.deleteShit(timeHandler)
     dbtest.get_boxes_after_time(TimeStampHandler.TimeStampHandler().getTimeStamp())
-
+    print dbtest.get_items_updated_after(TimeStampHandler.TimeStampHandler().getTimeStamp())
+    
 
 
 

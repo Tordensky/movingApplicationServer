@@ -19,6 +19,7 @@ class TimeStampHandler(object):
             print "Registered offset: ", self.timeOffset
         except:
             print "Error connecting to time server: europe.pool.ntp.org"
+            exit()
                                        
     def getTimeStamp(self):
         timeStamp = time.time() + self.timeOffset
