@@ -24,6 +24,10 @@ class index:
         #dbHandle = dbHandler.DBhandler()
         return "DRIT FETT"#json.dumps(movingDBHandler.get_boxes())
     
+    def POST(self):
+        print "KOMMER INN I POST"
+        print "POST REQ: ", web.data()
+    
 class Updates:
     def GET(self, method_id):
         timeStamp = format(method_id)
@@ -88,32 +92,32 @@ class MessageHandler(object):
             
             print "NL ", len(updates["NewLocations"])
             locationIDmap = movingDBHandler.create_locations_from_client(updates["NewLocations"], timeHandler)
-            print locationIDmap
+            print "Location Map",  locationIDmap
             print "UL ", len(updates["UpdatedLocations"])
-            print "DL ", len(updates["DeletedLocations"])
+            #print "DL ", len(updates["DeletedLocations"])
             
             
             print "NB ", len(updates["NewBoxes"])
             boxIdMap = movingDBHandler.create_boxes_from_client(updates["NewBoxes"], locationIDmap, timeHandler)
-            print boxIdMap
+            print "BOX MAP", boxIdMap
             
             print "UB ", len(updates["UpdatedBoxes"])
             movingDBHandler.update_boxes_from_client(updates["UpdatedBoxes"], locationIDmap, timeHandler)
             
-            print "DB ", len(updates["DeletedBoxes"])
-            movingDBHandler.delete_boxes_from_client(updates["DeletedBoxes"], timeHandler)
+            #print "DB ", len(updates["DeletedBoxes"])
+            #movingDBHandler.delete_boxes_from_client(updates["DeletedBoxes"], timeHandler)
             
             print "NI ", len(updates["NewItems"])
             itemIdMap  = movingDBHandler.create_items_from_client(updates["NewItems"], boxIdMap, timeHandler)
-            print itemIdMap
+            print "Item Map", itemIdMap
             print "UB ", len(updates["UpdatedItems"])
-            print "DB ", len(updates["DeletedItems"])
+            #print "DB ", len(updates["DeletedItems"])
             
             response = {}
             response["Status"] = "OK"
-            response["LocationIdMap"] = boxIdMap
+            response["LocationIdMap"] = locationIDmap
             response["BoxIdMap"] = boxIdMap
-            response["ItemIdMap"] = boxIdMap
+            response["ItemIdMap"] = itemIdMap
         
             return json.dumps(response)
         #except:
@@ -124,5 +128,5 @@ class MessageHandler(object):
 if __name__ == "__main__": 
         print "Starting Moving Server @: "
         ServerDBHandler.DBhandler().setupDb(timeHandler)
-        ServerDBHandler.DBhandler().createTestData(timeHandler)
+        #ServerDBHandler.DBhandler().createTestData(timeHandler)
         app.run()

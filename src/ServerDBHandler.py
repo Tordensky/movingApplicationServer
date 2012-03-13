@@ -116,7 +116,7 @@ class DBhandler(object):
 #            else:
 #                LID = 0
                                
-            self.update_Box(box["BID"], box["boxName"], box["boxDescription"], LID, timeHandler)
+            self.update_Box(int(box["BID"]), box["boxName"], box["boxDescription"], LID, timeHandler)
     
             
     ''' Deletes box from BID'''        
@@ -136,10 +136,16 @@ class DBhandler(object):
 
 ## BOX END   
     def remote_Id_to_local(self, row, localIdName, IdName, idMap):
+        for key in row:
+            print key, row[key]
+            
+        for key in idMap:
+            print key, idMap[key]
+        
         LOCAL_ID = int(row[IdName])
         if (LOCAL_ID > 0):
             pass
-        elif (row[localIdName] > 0):
+        elif (int(row[localIdName]) > 0):
             LOCAL_ID = idMap[int(row[localIdName])]
         else:    
             LOCAL_ID = 0
@@ -152,7 +158,7 @@ class DBhandler(object):
         for location in new_locations:
             count += 1
             LID = self.create_location(location["locationName"], location["locationDescription"], timeHandler)
-            idMap[location["id"]] = LID
+            idMap[int(location["_id"])] = LID
         print "Location id map", idMap
         return idMap
         
@@ -175,7 +181,7 @@ class DBhandler(object):
 #                LID = 0
 
             BID = self.create_Box(box["boxName"], box["boxDescription"], LID, timeHandler)
-            idMap[box["id"]] = BID
+            idMap[int(box["_id"])] = BID
         print "idMap", idMap
         return idMap
     
@@ -197,7 +203,7 @@ class DBhandler(object):
 #                BID = 0
                 
             IID = self.create_item(item["itemName"],item["itemDescription"], BID, timeHandler)
-            idMap[item["id"]] = IID
+            idMap[int(item["_id"])] = IID
         return idMap
 ## ITEMS START
     
