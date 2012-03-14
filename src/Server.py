@@ -94,7 +94,7 @@ class MessageHandler(object):
             locationIDmap = movingDBHandler.create_locations_from_client(updates["NewLocations"], timeHandler)
             print "Location Map",  locationIDmap
             print "UL ", len(updates["UpdatedLocations"])
-            #print "DL ", len(updates["DeletedLocations"])
+            print "DL ", len(updates["DeletedLocations"])
             
             
             print "NB ", len(updates["NewBoxes"])
@@ -104,14 +104,14 @@ class MessageHandler(object):
             print "UB ", len(updates["UpdatedBoxes"])
             movingDBHandler.update_boxes_from_client(updates["UpdatedBoxes"], locationIDmap, timeHandler)
             
-            #print "DB ", len(updates["DeletedBoxes"])
-            #movingDBHandler.delete_boxes_from_client(updates["DeletedBoxes"], timeHandler)
+            print "DB ", len(updates["DeletedBoxes"])
+            movingDBHandler.delete_boxes_from_client(updates["DeletedBoxes"], timeHandler)
             
             print "NI ", len(updates["NewItems"])
             itemIdMap  = movingDBHandler.create_items_from_client(updates["NewItems"], boxIdMap, timeHandler)
             print "Item Map", itemIdMap
             print "UB ", len(updates["UpdatedItems"])
-            #print "DB ", len(updates["DeletedItems"])
+            print "DB ", len(updates["DeletedItems"])
             
             response = {}
             response["Status"] = "OK"

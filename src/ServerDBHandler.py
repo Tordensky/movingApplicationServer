@@ -132,7 +132,7 @@ class DBhandler(object):
     ''' Deletes boxes from Client '''    
     def delete_boxes_from_client(self, boxes, timeHandler):
         for box in boxes:
-            self.delete_Box(box["BID"], timeHandler)
+            self.delete_Box(int(box["BID"]), timeHandler)
 
 ## BOX END   
     def remote_Id_to_local(self, row, localIdName, IdName, idMap):
@@ -493,7 +493,7 @@ class DBhandler(object):
         for x in range (10):
             self.update_Box(x, "UPDATED2", "UPDATED2", 2, timeHandler);
             
-        for x in range (10):
+        for x in range (100):
             self.update_item(x, "Updated item", "Updated Item", timeHandler)    
         #self.update_Box(1, "Box updated" , "Endra", 1, timeHandler)
         
@@ -515,12 +515,12 @@ class DBhandler(object):
 if __name__ == "__main__": 
     dbtest = DBhandler()
     timeHandler = TimeStampHandler.TimeStampHandler()
-    #dbtest.setupDb(timeHandler)
+    dbtest.setupDb(timeHandler)
     #dbtest.createTestData(timeHandler)
     #dbtest.createUpdates(timeHandler)
-    dbtest.deleteShit(timeHandler)
-    dbtest.get_boxes_after_time(TimeStampHandler.TimeStampHandler().getTimeStamp())
-    print dbtest.get_items_updated_after(TimeStampHandler.TimeStampHandler().getTimeStamp())
+    #dbtest.deleteShit(timeHandler)
+    #dbtest.get_boxes_after_time(TimeStampHandler.TimeStampHandler().getTimeStamp())
+    #print dbtest.get_items_updated_after(TimeStampHandler.TimeStampHandler().getTimeStamp())
     
 
 
