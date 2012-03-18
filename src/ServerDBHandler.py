@@ -11,8 +11,6 @@ def dict_factory(cursor, row):
 def get_time():
     return time.strftime("%Y%m%d%H%M%S")
 
-
-
 class DBhandler(object):
     def __init__(self):
         self.conn = sqlite3.connect('test.db');        
@@ -88,7 +86,6 @@ class DBhandler(object):
                         """% (boxName,boxDescription, boxLocationId, int(timeHandler.getTimeStamp())))
         
         BID = c.lastrowid
-        print "  last BID:", BID 
         c.close()
         self.conn.commit()
         return BID
@@ -107,15 +104,7 @@ class DBhandler(object):
     def update_boxes_from_client(self, boxes, locationIdMap, timeHandler):
         LID = 0;
         for box in boxes:
-            LID = self.remote_Id_to_local(box, "localLID", "LID", locationIdMap)
-#            int(box["LID"])
-#            if (LID > 0):
-#                pass
-#            elif (box["localLID"] > 0):
-#                LID = locationIdMap[box["localLID"]]
-#            else:
-#                LID = 0
-                               
+            LID = self.remote_Id_to_local(box, "localLID", "LID", locationIdMap)                               
             self.update_Box(int(box["BID"]), box["boxName"], box["boxDescription"], LID, timeHandler)
     
             
@@ -135,13 +124,7 @@ class DBhandler(object):
             self.delete_Box(int(box["BID"]), timeHandler)
 
 ## BOX END   
-    def remote_Id_to_local(self, row, localIdName, IdName, idMap):
-        for key in row:
-            print key, row[key]
-            
-        for key in idMap:
-            print key, idMap[key]
-        
+    def remote_Id_to_local(self, row, localIdName, IdName, idMap):        
         LOCAL_ID = int(row[IdName])
         if (LOCAL_ID > 0):
             pass
@@ -151,6 +134,7 @@ class DBhandler(object):
             LOCAL_ID = 0
         return LOCAL_ID
     
+    ''' Create new locations from client, return ID map'''
     def create_locations_from_client(self, new_locations, timeHandler):
         idMap = {}
         count = 0
@@ -159,7 +143,6 @@ class DBhandler(object):
             count += 1
             LID = self.create_location(location["locationName"], location["locationDescription"], timeHandler)
             idMap[int(location["_id"])] = LID
-        print "Location id map", idMap
         return idMap
         
     ''' Create new Boxes from Client'''
@@ -171,20 +154,12 @@ class DBhandler(object):
         for box in new_boxes:
             count += 1
             LID = self.remote_Id_to_local(box, "localLID", "LID", locationIdMap)
-#            LID = int(box["LID"])
-#            
-#            if (LID > 0):
-#                pass
-#            elif (box["localLID"] > 0):
-#                LID = locationIdMap[int(box["localLID"])]
-#            else:    
-#                LID = 0
 
             BID = self.create_Box(box["boxName"], box["boxDescription"], LID, timeHandler)
             idMap[int(box["_id"])] = BID
-        print "idMap", idMap
         return idMap
     
+    ''' Create new items from client, return ID map'''
     def create_items_from_client(self, new_items, boxIdMap, timeHandler):
         idMap = {}
         count = 0
@@ -193,18 +168,15 @@ class DBhandler(object):
         for item in new_items:
             count += 1
             BID = self.remote_Id_to_local(item, "localBID", "BID", boxIdMap)
-#            BID = int(item["BID"])
-#            
-#            if (BID > 0):
-#                pass
-#            elif (item["localBID"] > 0):
-#                BID = boxIdMap[item["localBID"]]
-#            else:
-#                BID = 0
                 
             IID = self.create_item(item["itemName"],item["itemDescription"], BID, timeHandler)
             idMap[int(item["_id"])] = IID
         return idMap
+    
+    ''' Deletes items from Client '''    
+    def delete_items_from_client(self, items, timeHandler):
+        for item in items:
+            self.delete_item(int(item["IID"]), timeHandler)
 ## ITEMS START
     
     ''' Returns items created after given time stamp '''
@@ -256,7 +228,6 @@ class DBhandler(object):
         
         
         IID = c.lastrowid
-        print "    last IID:", IID 
         c.close()
         self.conn.commit()
         return IID
@@ -270,6 +241,13 @@ class DBhandler(object):
                         """ % (newItemName, newItemDescription, int(timeHandler.getTimeStamp()), IID))
         c.close()
         self.conn.commit()
+        
+    ''' Update items from Client '''
+    def update_items_from_client(self, items, boxIdMap, timeHandler):
+        BID = 0;
+        for item in items:
+            BID = self.remote_Id_to_local(item, "localBID", "BID", boxIdMap)                               
+            self.update_item(int(item["IID"]), item["itemName"], item["itemDescription"], BID, timeHandler)
     
     ''' Deletes item from IID'''        
     def delete_item(self, IID, timeHandler):
@@ -335,7 +313,6 @@ class DBhandler(object):
                         """ % (locationName, locationDescription, int(timeHandler.getTimeStamp())))
         
         LID = c.lastrowid
-        print "last LID:", LID 
         c.close()
         self.conn.commit()
         return LID
@@ -350,9 +327,14 @@ class DBhandler(object):
                         """ % (newLocationName, newLocationDescription, int(timeHandler.getTimeStamp()), LID))
         c.close()
         self.conn.commit()
-    
+        
+    ''' Update location from Client '''
+    def update_locations_from_client(self, locations, timeHandler):
+        for location in locations:
+            self.update_location(int(location["LID"]), location["locationName"], location["locationDescription"], timeHandler)                             
+
     # TODO
-    ''' Deletes item from IID'''        
+    ''' Deletes Location from LID'''        
     def delete_location(self, LID, timeHandler):
         c = self.conn.cursor()
         c.execute("""   UPDATE Locations
@@ -362,48 +344,13 @@ class DBhandler(object):
         c.close()
         self.conn.commit()
         
-## LOCATIONS END
-
-
-    
-    # TODO OLD REMOVE     
-    def putItem(self, itemName, itemDescription, boxID, timeHandler):
-        c = self.conn.cursor()
-        c.execute("""   INSERT INTO Items (itemName, itemDescription, boxID, itemUpdated) 
-                        VALUES ("%s", "%s", %d, %d)
-                        """% (itemName, itemDescription, boxID, int(timeHandler.getTimeStamp())))
-        c.close()
-        self.conn.commit()
-    
-    # TODO OLD METHOD REMOVE
-    def get_boxes_after_time(self, time):
-        boxCursor = self.conn.cursor()
-        print time
-        boxCursor.execute('SELECT * FROM Boxes Where boxCreated >= %d' % time);
-        itemCursor = self.conn.cursor()
+    ''' Deletes locations from Client '''    
+    def delete_locations_from_client(self, locations, timeHandler):
+        for location in locations:
+            self.delete_location(int(location["LID"]), timeHandler)
         
-        RowList = []
-        for box in boxCursor:
-            BID = box["BID"]
-            
-            itemCursor.execute("SELECT * FROM Items WHERE %d = BID AND itemUpdated >= %d " % (BID, time))
-            itemList = []
-            for item in itemCursor:
-                itemList.append(item)
-            box["items"] = itemList
-            RowList.append(box);
-        return RowList
-    
-    # TODO OLD METHOD REMOVE
-    def get_boxes_with_items(self):
-        c = self.conn.cursor()
-        c.execute('SELECT * FROM Boxes')
-        RowList = [];
-        for row in c:
-            print row["BID"]
-             
-            RowList.append(row)
-        return RowList
+## LOCATIONS END
+ 
             
     ''' Setup for server DB '''            
     def setupDb(self, timeHandler):
@@ -457,18 +404,12 @@ class DBhandler(object):
         self.conn.commit()
     
     ''' Helper function for creating some test data '''
-    def createTestData(self, timeHandler):
-        
-        # TODO create test locations, test updates and deletes
-        locations = ["Home", "Storage", "Garage",]
-        Boxes = ["Kitchen stuff", "Tools", "Bedroom", "Toys", "Winter clothes"]
-        Items = ["Untitled Item"]
-        
-        locationNameNum = 0
+    def createTestData(self, timeHandler):        
+
         boxNameNum = 0
         itemNameNum = 0
         
-        for locNum in range (2):
+        for locNum in range (3):
             locationName = "Location: " + str(locNum)
             locationDescription = "location " + str(locNum) + " description"            
             LID = self.create_location(locationName, locationDescription, timeHandler)
@@ -485,7 +426,7 @@ class DBhandler(object):
                     self.create_item(itemName, itemDescription, BID, timeHandler)
                     itemNameNum += 1
         
-        
+    ''' Helper function for updating some test data '''    
     def createUpdates(self, timeHandler):
         for x in range(10):
             self.update_location(x, "UPDATED LOCATION", "UPDT LOC", timeHandler)
@@ -495,32 +436,28 @@ class DBhandler(object):
             
         for x in range (100):
             self.update_item(x, "Updated item", "Updated Item", timeHandler)    
-        #self.update_Box(1, "Box updated" , "Endra", 1, timeHandler)
-        
-        #self.delete_Box(3, timeHandler)
-        #self.delete_Box(2, timeHandler)
-        
+
+    ''' Helper function for deleting some test data '''    
     def deleteShit(self, timeHandler):
-        #for x in range(10):
-        #    self.delete_location(x, timeHandler)
+        for x in range(10):
+            self.delete_location(x, timeHandler)
             
         for x in range(20):
             self.delete_item(x, timeHandler)
             
-        #for x in range(2):
-        #    self.delete_Box(x, timeHandler)
+        for x in range(2):
+                self.delete_Box(x, timeHandler)
         
-        
-        
+               
 if __name__ == "__main__": 
     dbtest = DBhandler()
     timeHandler = TimeStampHandler.TimeStampHandler()
     dbtest.setupDb(timeHandler)
-    #dbtest.createTestData(timeHandler)
+    dbtest.createTestData(timeHandler)
     #dbtest.createUpdates(timeHandler)
     #dbtest.deleteShit(timeHandler)
     #dbtest.get_boxes_after_time(TimeStampHandler.TimeStampHandler().getTimeStamp())
-    #print dbtest.get_items_updated_after(TimeStampHandler.TimeStampHandler().getTimeStamp())
+
     
 
 

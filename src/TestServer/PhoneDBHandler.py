@@ -54,7 +54,7 @@ class DBHandler(object):
             count += 1
             self.create_Box(box["boxName"], box["boxDescription"], int(box["boxLocation"]), 0, BID = int(box["BID"]), boxCreated = 0)  
     
-        print "Created boxes: ", count 
+
         
     ''' Update box data, box identified by either BID(Remote ID on server OR rowID (local id))'''
     def update_Box(self, rowID,  boxName, boxDescription, BID = 0, boxLocation = 0, boxUpdated = 1):
@@ -73,7 +73,7 @@ class DBHandler(object):
             count += 1
             self.update_Box(0, int(box["BID"]), box["boxName"], box["boxDescription"], int(box["boxLocation"], 0)) 
         
-        print "Updated Boxes: ", count
+
             
     ''' Set box BId given from server after POSTING new boxes '''
     def set_box_bid(self, rowID, BID):
@@ -115,7 +115,7 @@ class DBHandler(object):
         for box in boxList:
             count += 1
             self.delete_Box_Hard(0, int(box["BID"]))
-        print "Deleted boxes: ", count
+
 
 # Boxes    
     ''' Get boxes created after last sync with server'''
@@ -291,11 +291,9 @@ class DBHandler(object):
                 
 if __name__ == "__main__":
     self = DBHandler()
-    #self.setupSimPhoneDB()
-    self.createTestData()
-    print self._get_created_after_last_sync("Boxes")
-    print self._get_updated_after_last_sync("Boxes")
-    print self._get_deleted_after_last_sync("Boxes")
+    self.setupSimPhoneDB()
+
+
 
     
     
